@@ -46,6 +46,16 @@ iframe{width:100%;height:75vh;border:1px solid var(--line);border-radius:8px;bac
  .print-title{display:block!important}
 }
 .print-title{display:none}
+
+.pdf-controls{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;margin:12px 0}
+.pdf-controls button{padding:10px 14px;font-size:.95rem}
+#pdfCanvas{display:block;margin:0 auto;width:100%;height:auto;background:#fff;box-shadow:0 1px 6px #0002}
+#pdfViewer{max-width:830px;margin:auto;overflow:hidden}
+#pdfMessage{font-size:.91rem;color:#31506d;text-align:center;padding:10px}
+.answer-shortcut{display:flex;justify-content:center;gap:8px;margin:12px 0}
+.answer-shortcut a{background:#e6f0fd;color:#174a7e;padding:10px 15px;border-radius:7px;text-decoration:none;font-weight:700}
+#sectionB .qgrid,#sectionC .qgrid{grid-template-columns:1fr}
+@media(max-width:520px){#paper{padding:10px}.pdf-controls{gap:6px}.pdf-controls button{padding:9px 11px}textarea{font-size:16px;min-height:100px}.qgrid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -61,9 +71,12 @@ iframe{width:100%;height:75vh;border:1px solid var(--line);border-radius:8px;bac
 </section>
 <section class="panel no-print" id="paper">
 <h2>Kertas soalan asal (26 halaman)</h2>
-<iframe src="UASA_SAINS_T2_2026.pdf#toolbar=1&navpanes=0" title="Kertas soalan asal PDF"></iframe>
-<p class="small">Kertas soalan asal mengandungi semua rajah dan gambar. Untuk melihat gambar dengan jelas atau mencetak kertas soalan bergambar, buka PDF asal melalui butang di bawah.</p>
-<a class="btn secondary" href="UASA_SAINS_T2_2026.pdf" target="_blank" rel="noopener">Buka kertas soalan</a>
+<p class="hint">Lihat semua halaman soalan dan gambar di sini. Gunakan butang halaman untuk bergerak, kemudian jawab dalam ruangan di bawah. Tidak perlu muat turun kertas soalan.</p>
+<div class="pdf-controls"><button type="button" id="prevPage" class="secondary">❮ Sebelum</button><strong id="pageIndicator">Halaman 1 / 26</strong><button type="button" id="nextPage" class="secondary">Seterusnya ❯</button></div>
+<div id="pdfViewer"><div id="pdfMessage" role="status">Sedang memuatkan kertas soalan…</div><canvas id="pdfCanvas" aria-label="Halaman kertas soalan beserta gambar"></canvas></div>
+<div class="answer-shortcut"><a href="#worksheet">✍️ Pergi ke ruang jawapan ↓</a></div>
+<p class="small">Sekiranya paparan soalan gagal dimuatkan, gunakan pautan sandaran ini.</p>
+<a class="btn secondary" href="UASA_SAINS_T2_2026.pdf" target="_blank" rel="noopener">Buka PDF asal (sandaran)</a>
 </section>
 <form id="worksheet">
 <div class="panel">
@@ -75,15 +88,52 @@ iframe{width:100%;height:75vh;border:1px solid var(--line);border-radius:8px;bac
 </form>
 <section class="panel no-print">
 <h2>Simpan jawapan sebagai PDF</h2>
-<p class="hint">PDF jawapan memaparkan SEMUA teks jawapan murid dengan jelas, termasuk jawapan panjang. Gambar/rajah kekal dalam kertas soalan PDF asal; gunakan butang Buka kertas soalan untuk melihat atau mencetaknya. Hantar PDF jawapan mengikut arahan guru.</p>
+<p class="hint">Tekan satu butang untuk menghasilkan fail PDF jawapan terus pada telefon, iPhone, tablet atau laptop. Semua jawapan panjang disertakan. Soalan dan gambar boleh dilihat terus di atas.</p>
 <div class="actions">
-<button type="button" id="save">Simpan / Cetak jawapan sebagai PDF</button>
+<button type="button" id="save">📄 Simpan PDF jawapan</button>
 <button type="button" class="secondary" id="clear">Kosongkan jawapan</button>
 </div><div id="status" role="status" aria-live="polite"></div>
 </section>
 </main>
 <div id="printSheet" aria-hidden="true"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
 <script>
+let pdfDocument=null,pdfPage=1,pdfBusy=false,pdfPending=null;
+const pdfCanvas=document.getElementById('pdfCanvas'),pdfMsg=document.getElementById('pdfMessage');
+async function displayPdfPage(num){
+ if(!pdfDocument)return;
+ if(pdfBusy){pdfPending=num;return}
+ pdfBusy=true;pdfPage=Math.max(1,Math.min(num,pdfDocument.numPages));
+ document.getElementById('pageIndicator').textContent='Halaman '+pdfPage+' / '+pdfDocument.numPages;
+ document.getElementById('prevPage').disabled=pdfPage===1;
+ document.getElementById('nextPage').disabled=pdfPage===pdfDocument.numPages;
+ try{
+  const page=await pdfDocument.getPage(pdfPage);
+  const base=page.getViewport({scale:1});
+  const width=Math.max(280,Math.min(830,document.getElementById('pdfViewer').clientWidth));
+  const scale=width/base.width;
+  const pixelRatio=Math.min(window.devicePixelRatio||1,2);
+  const view=page.getViewport({scale:scale*pixelRatio});
+  pdfCanvas.width=Math.round(view.width);pdfCanvas.height=Math.round(view.height);
+  await page.render({canvasContext:pdfCanvas.getContext('2d'),viewport:view}).promise;
+  pdfCanvas.style.width=width+'px';pdfCanvas.style.height=(view.height/pixelRatio)+'px';
+  pdfMsg.textContent='';
+ }catch(err){pdfMsg.textContent='Halaman gagal dipaparkan. Gunakan pautan PDF asal sebagai sandaran.';console.error(err)}
+ pdfBusy=false;
+ if(pdfPending!==null){const p=pdfPending;pdfPending=null;if(p!==pdfPage)displayPdfPage(p)}
+}
+document.getElementById('prevPage').addEventListener('click',()=>displayPdfPage(pdfPage-1));
+document.getElementById('nextPage').addEventListener('click',()=>displayPdfPage(pdfPage+1));
+async function initPdf(){
+ try{
+  if(!window.pdfjsLib)throw Error('PDF viewer unavailable');
+  pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  pdfDocument=await pdfjsLib.getDocument('UASA_SAINS_T2_2026.pdf').promise;
+  await displayPdfPage(1);
+ }catch(err){pdfMsg.textContent='Paparan automatik gagal. Tekan Buka PDF asal (sandaran).';console.error(err)}
+}
+initPdf();
 const mcq=document.getElementById('mcq'), secB=document.getElementById('sectionB'), secC=document.getElementById('sectionC');
 function addMCQ(n){let d=document.createElement('div');d.className='q';d.innerHTML=`<label for="a${n}">Soalan ${n}</label><select id="a${n}" name="Soalan ${n}"><option value="">Pilih jawapan</option>${['A','B','C','D'].map(x=>`<option>${x}</option>`).join('')}</select>`;mcq.appendChild(d)}
 for(let n=1;n<=20;n++)addMCQ(n);
@@ -103,10 +153,39 @@ const c=[
 ['C5a','5(a) Maksud haiwan invertebrata','1'],['C5b','5(b) Cacing tanah dan ular','1'],['C5c','5(c) Ciri sepunya tikus dan gajah','1'],['C5d','5(d) Lengkapkan carta pengelasan haiwan','3'],['C5e','5(e) Paus dan kumpulan ikan','3'],['C5f','5(f) Interaksi ular dengan helang','3'],
 ['C6a','6(a) Faktor penyerapan dan pembebasan haba','1'],['C6b','6(b) Warna baju untuk merentas desa dan sebab','3'],['C6c','6(c) Banding beza suhu dua teko','3'],['C6d','6(d) Kelebihan teko berwarna gelap','2'],['C6e','6(e) Pengubahsuaian periuk untuk meningkatkan penyerapan haba','3']];
 c.forEach(x=>addText(secC,x[0],x[1],x[2],3));
+function downloadAnswerPDF(nama,kelas){
+ const {jsPDF}=window.jspdf;
+ const doc=new jsPDF({unit:'mm',format:'a4'});
+ const left=16,right=194,usable=right-left;
+ let y=19;
+ const check=(h)=>{if(y+h>277){doc.addPage();y=18}};
+ const write=(value,size=10,bold=false,margin=0)=>{
+  doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(size);
+  const lines=doc.splitTextToSize(String(value),usable-margin);
+  const lineHeight=size*.45+1.6;
+  for(const line of lines){check(lineHeight);doc.text(line,left+margin,y);y+=lineHeight}
+ };
+ write('JAWAPAN UASA SAINS TINGKATAN 2',15,true);y+=2;
+ write('Nama: '+nama,11,true);write('Kelas: '+kelas,11,true);y+=6;
+ const groups=[['BAHAGIAN A - OBJEKTIF',mcq],['BAHAGIAN B - STRUKTUR',secB],['BAHAGIAN C - RESPONS BERTULIS',secC]];
+ for(const [title,container] of groups){
+  check(18);write(title,12,true);y+=3;
+  for(const q of container.querySelectorAll('.q')){
+   const field=q.querySelector('select,textarea');
+   const label=q.querySelector('label').textContent.trim();
+   check(13);write(label,10,true);write(field.value.trim()||'(Tidak dijawab)',10,false,3);y+=4;
+  }
+  y+=4;
+ }
+ const count=doc.getNumberOfPages();
+ for(let i=1;i<=count;i++){doc.setPage(i);doc.setFontSize(8);doc.setTextColor(100);doc.text('Jawapan UASA Sains T2 2026  |  '+i+'/'+count,194,290,{align:'right'});doc.setTextColor(0)}
+ const safe=(nama+'_'+kelas).replace(/[^a-zA-Z0-9 _-]/g,'').trim().replace(/\s+/g,'_').slice(0,65);
+ doc.save('Jawapan_UASA_Sains_T2_'+(safe||'murid')+'.pdf');
+}
 document.getElementById('save').addEventListener('click',()=>{
  const nama=document.getElementById('nama').value.trim(), kelas=document.getElementById('kelas').value.trim();
  if(!nama||!kelas){document.getElementById('status').textContent='Sila isi nama murid dan kelas dahulu.';(!nama?document.getElementById('nama'):document.getElementById('kelas')).focus();return}
- document.title=`Jawapan UASA Sains T2 - ${nama} - ${kelas}`;
+ if(window.jspdf && window.jspdf.jsPDF){downloadAnswerPDF(nama,kelas);document.getElementById('status').textContent='PDF jawapan telah dijana. Semak Files / Downloads pada peranti.';return}\n document.title=`Jawapan UASA Sains T2 - ${nama} - ${kelas}`;
  const sheet=document.getElementById('printSheet');
  sheet.replaceChildren();
  const el=(tag,cls,value)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n};
