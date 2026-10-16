@@ -27,7 +27,24 @@ button.secondary,.btn.secondary{background:#e5edf6;color:#123553}
 iframe{width:100%;height:75vh;border:1px solid var(--line);border-radius:8px;background:#eee}
 .small{font-size:.85rem;color:#526173}
 @media(max-width:520px){.identity{grid-template-columns:1fr}main{padding:0 9px}.panel{padding:12px}iframe{height:60vh}.actions button{width:100%}}
-@media print{header,.no-print,#paper{display:none!important}body{background:white}.panel{border:0;box-shadow:none;padding:0;margin:0}.qgrid{display:block}.q{border:0;border-bottom:1px solid #ddd;border-radius:0;padding:8px 0}textarea,input,select{border:0!important;border-bottom:1px solid #aaa!important;border-radius:0!important;padding:4px!important}.print-title{display:block!important}}
+#printSheet{display:none}
+.paper-note{background:#eef5fb;border-left:4px solid #174a7e;padding:10px 12px;margin:12px 0;border-radius:5px}
+@media print{
+ @page{size:A4;margin:16mm 15mm}
+ header,main,.no-print,#paper{display:none!important}
+ html,body{background:#fff!important;color:#111!important;font-family:Arial,Helvetica,sans-serif;font-size:11pt}
+ #printSheet{display:block!important;max-width:none;margin:0;padding:0}
+ .print-header{text-align:center;border-bottom:2px solid #222;padding-bottom:10px;margin-bottom:14px}
+ .print-header h1{font-size:16pt;margin:0 0 5px}
+ .print-meta{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 18px;font-size:11pt}
+ .print-group{margin:18px 0 8px;font-size:12pt;font-weight:700;border-bottom:1px solid #aaa;padding-bottom:5px;break-after:avoid}
+ .print-question{margin:0 0 12px;padding:0 0 9px;border-bottom:1px solid #ddd;break-inside:avoid;page-break-inside:avoid}
+ .print-label{font-weight:700;font-size:10.5pt;margin-bottom:5px}
+ .print-answer{font-size:11pt;white-space:pre-wrap;overflow-wrap:anywhere;word-break:normal;line-height:1.6;min-height:16px}
+ .print-empty{color:#777;font-style:italic}
+ .print-footer{font-size:9pt;color:#555;border-top:1px solid #bbb;margin-top:18px;padding-top:7px}
+ .print-title{display:block!important}
+}
 .print-title{display:none}
 </style>
 </head>
@@ -45,7 +62,7 @@ iframe{width:100%;height:75vh;border:1px solid var(--line);border-radius:8px;bac
 <section class="panel no-print" id="paper">
 <h2>Kertas soalan asal (26 halaman)</h2>
 <iframe src="UASA_SAINS_T2_2026.pdf#toolbar=1&navpanes=0" title="Kertas soalan asal PDF"></iframe>
-<p class="small">Jika paparan PDF tidak muncul pada telefon, tekan butang “Buka kertas soalan” di bawah.</p>
+<p class="small">Kertas soalan asal mengandungi semua rajah dan gambar. Untuk melihat gambar dengan jelas atau mencetak kertas soalan bergambar, buka PDF asal melalui butang di bawah.</p>
 <a class="btn secondary" href="UASA_SAINS_T2_2026.pdf" target="_blank" rel="noopener">Buka kertas soalan</a>
 </section>
 <form id="worksheet">
@@ -58,13 +75,14 @@ iframe{width:100%;height:75vh;border:1px solid var(--line);border-radius:8px;bac
 </form>
 <section class="panel no-print">
 <h2>Simpan jawapan sebagai PDF</h2>
-<p class="hint">PDF yang dijana mengandungi nama, kelas dan semua jawapan yang diisi. Kertas soalan asal kekal berasingan dan boleh dibuka melalui pautan di atas. Untuk menghantar, lampirkan PDF jawapan kepada guru mengikut arahan guru.</p>
+<p class="hint">PDF jawapan memaparkan SEMUA teks jawapan murid dengan jelas, termasuk jawapan panjang. Gambar/rajah kekal dalam kertas soalan PDF asal; gunakan butang Buka kertas soalan untuk melihat atau mencetaknya. Hantar PDF jawapan mengikut arahan guru.</p>
 <div class="actions">
 <button type="button" id="save">Simpan / Cetak jawapan sebagai PDF</button>
 <button type="button" class="secondary" id="clear">Kosongkan jawapan</button>
 </div><div id="status" role="status" aria-live="polite"></div>
 </section>
 </main>
+<div id="printSheet" aria-hidden="true"></div>
 <script>
 const mcq=document.getElementById('mcq'), secB=document.getElementById('sectionB'), secC=document.getElementById('sectionC');
 function addMCQ(n){let d=document.createElement('div');d.className='q';d.innerHTML=`<label for="a${n}">Soalan ${n}</label><select id="a${n}" name="Soalan ${n}"><option value="">Pilih jawapan</option>${['A','B','C','D'].map(x=>`<option>${x}</option>`).join('')}</select>`;mcq.appendChild(d)}
@@ -89,6 +107,26 @@ document.getElementById('save').addEventListener('click',()=>{
  const nama=document.getElementById('nama').value.trim(), kelas=document.getElementById('kelas').value.trim();
  if(!nama||!kelas){document.getElementById('status').textContent='Sila isi nama murid dan kelas dahulu.';(!nama?document.getElementById('nama'):document.getElementById('kelas')).focus();return}
  document.title=`Jawapan UASA Sains T2 - ${nama} - ${kelas}`;
+ const sheet=document.getElementById('printSheet');
+ sheet.replaceChildren();
+ const el=(tag,cls,value)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n};
+ const heading=el('div','print-header');
+ heading.append(el('h1','', 'JAWAPAN UASA SAINS TINGKATAN 2'),el('div','', 'Sesi 2026 • Helaian Jawapan Murid'));
+ sheet.append(heading);
+ const meta=el('div','print-meta');meta.append(el('div','', 'NAMA: '+nama),el('div','', 'KELAS: '+kelas));sheet.append(meta);
+ const sections=[['BAHAGIAN A — OBJEKTIF',mcq],['BAHAGIAN B — STRUKTUR',secB],['BAHAGIAN C — RESPONS BERTULIS',secC]];
+ for(const [title,container] of sections){
+   sheet.append(el('div','print-group',title));
+   for(const q of container.querySelectorAll('.q')){
+     const field=q.querySelector('select,textarea');
+     const wrapper=el('div','print-question');
+     const label=q.querySelector('label');
+     wrapper.append(el('div','print-label',label?label.textContent.trim():'Soalan'));
+     const answer=el('div','print-answer'+(field.value.trim()?'':' print-empty'),field.value.trim()||'Tidak dijawab');
+     wrapper.append(answer);sheet.append(wrapper);
+   }
+ }
+ sheet.append(el('div','print-footer','Kertas soalan asal beserta rajah/gambar: teacherziela.github.io/uasa-sains-t2/ • PDF UASA_SAINS_T2_2026.pdf'));
  document.getElementById('status').textContent='Pilih “Save as PDF / Simpan sebagai PDF” pada dialog cetakan. Pada iPhone, gunakan Share → Print, kemudian buka pratonton dan Share → Save to Files.';
  window.print();
 });
