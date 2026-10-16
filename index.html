@@ -56,7 +56,7 @@ iframe{width:100%;height:75vh;border:1px solid var(--line);border-radius:8px;bac
 .answer-shortcut a{background:#e6f0fd;color:#174a7e;padding:10px 15px;border-radius:7px;text-decoration:none;font-weight:700}
 #sectionB .qgrid,#sectionC .qgrid{grid-template-columns:1fr}
 @media(max-width:520px){#paper{padding:10px}.pdf-controls{gap:6px}.pdf-controls button{padding:9px 11px}textarea{font-size:16px;min-height:100px}.qgrid{grid-template-columns:1fr}}
-.tap-options{display:grid;gap:8px}.tap-option{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid #aec4d9;border-radius:9px;cursor:pointer;font-weight:400;background:#fafcff}.tap-option:has(input:checked){border:2px solid #1762a1;background:#e6f2ff}.tap-option input{width:20px;height:20px;flex:none;accent-color:#174a7e}.match-row{display:grid;gap:6px;margin-bottom:12px}.match-row select{font-size:16px}.interactive-hint{color:#174a7e;font-size:.9rem;margin:0 0 12px}html{scroll-behavior:smooth}</style>
+.tap-options{display:grid;gap:8px}.tap-option{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid #aec4d9;border-radius:9px;cursor:pointer;font-weight:400;background:#fafcff}.tap-option:has(input:checked){border:2px solid #1762a1;background:#e6f2ff}.tap-option input{width:20px;height:20px;flex:none;accent-color:#174a7e}.match-row{display:grid;gap:6px;margin-bottom:12px}.match-row select{font-size:16px}.interactive-hint{color:#174a7e;font-size:.9rem;margin:0 0 12px}html{scroll-behavior:smooth}.draw-wrap{margin-top:8px}.draw-pad{display:block;width:100%;height:230px;border:2px dashed #7a9ab8;border-radius:10px;background:#fff;touch-action:none;cursor:crosshair}.draw-actions{display:flex;gap:8px;margin-top:8px}.draw-actions button{padding:9px;font-size:.85rem}.draw-note{font-size:.85rem;color:#42576b;margin:0 0 8px}.tf-grid{display:grid;gap:10px}.tf-row{border:1px solid #cbd5e1;border-radius:9px;padding:10px}.tf-row strong{display:block;margin-bottom:8px}.tf-choices{display:flex;gap:18px}.tf-choices label{display:flex;align-items:center;gap:8px;font-weight:500;margin:0}.tf-choices input{width:21px;height:21px}.add-drawing{margin-top:8px;background:#edf3fa;color:#174a7e;font-size:.88rem}</style>
 </head>
 <body>
 <header><h1>Ujian Akhir Sesi Akademik — Sains Tingkatan 2</h1><p>Sesi 2026 · 2 jam · 100 markah</p></header>
@@ -169,7 +169,34 @@ function replaceWithMatching(id,rows,terms){
  card.insertAdjacentHTML('beforeend','<p class="interactive-hint">Pilih istilah yang sesuai bagi setiap pernyataan.</p>');
  rows.forEach(([key,prompt])=>{const row=document.createElement('div');row.className='match-row';const label=document.createElement('label');label.textContent=prompt;const select=document.createElement('select');select.name=id+'_'+key;select.setAttribute('aria-label',prompt);select.append(new Option('— Pilih istilah —',''));terms.forEach(t=>select.append(new Option(t,t)));row.append(label,select);card.append(row)});
 }
+
+function makeTruthFalse(id,items){
+ const area=document.getElementById(id);if(!area)return;const card=area.closest('.q');area.remove();
+ card.insertAdjacentHTML('beforeend','<p class="interactive-hint">Tandakan Benar atau Palsu bagi setiap pernyataan berdasarkan kertas soalan asal.</p>');
+ const grid=document.createElement('div');grid.className='tf-grid';
+ items.forEach((statement,i)=>{const item=document.createElement('div');item.className='tf-row';const caption=document.createElement('strong');caption.textContent=statement;item.append(caption);const choices=document.createElement('div');choices.className='tf-choices';['Benar','Palsu'].forEach(v=>{const label=document.createElement('label');const input=document.createElement('input');input.type='radio';input.name=id+'-statement-'+i;input.value=v;label.append(input,document.createTextNode(v));choices.append(label)});item.append(choices);grid.append(item)});card.append(grid)
+}
+function addDrawing(id,always=false){
+ const field=document.getElementById(id);if(!field)return;const card=field.closest('.q');
+ if(always){field.style.display='none'}else{
+ const toggle=document.createElement('button');toggle.type='button';toggle.className='add-drawing secondary';toggle.textContent='✏️ Tambah lukisan / label rajah';field.insertAdjacentElement('afterend',toggle);
+ toggle.onclick=()=>{draw.style.display=draw.style.display==='none'?'block':'none';if(draw.style.display==='block')initialize()}}
+ const draw=document.createElement('div');draw.className='draw-wrap';if(!always)draw.style.display='none';
+ draw.innerHTML='<p class="draw-note">Lukis menggunakan jari, stylus atau tetikus. Lukisan akan disertakan dalam PDF jawapan.</p><canvas class="draw-pad"></canvas><div class="draw-actions"><button type="button" class="secondary draw-clear">Padam lukisan</button></div>';
+ card.append(draw);const canvas=draw.querySelector('canvas');let drawing=false,used=false,initialized=false;
+ function initialize(){if(initialized)return;initialized=true;const w=Math.max(260,Math.round(canvas.getBoundingClientRect().width));canvas.width=w*2;canvas.height=460;const cx=canvas.getContext('2d');cx.scale(2,2);cx.lineWidth=2.3;cx.lineCap='round';cx.lineJoin='round';cx.strokeStyle='#102f56';cx.fillStyle='#ffffff';cx.fillRect(0,0,w,230)}
+ function pos(e){const b=canvas.getBoundingClientRect();return {x:(e.clientX-b.left)*canvas.width/b.width/2,y:(e.clientY-b.top)*canvas.height/b.height/2}}
+ canvas.addEventListener('pointerdown',e=>{initialize();canvas.setPointerCapture(e.pointerId);drawing=true;used=true;const p=pos(e);canvas.getContext('2d').beginPath();canvas.getContext('2d').moveTo(p.x,p.y)});
+ canvas.addEventListener('pointermove',e=>{if(!drawing)return;const p=pos(e);const cx=canvas.getContext('2d');cx.lineTo(p.x,p.y);cx.stroke()});
+ ['pointerup','pointercancel','lostpointercapture'].forEach(ev=>canvas.addEventListener(ev,()=>drawing=false));
+ draw.querySelector('.draw-clear').onclick=()=>{initialize();const cx=canvas.getContext('2d');cx.save();cx.setTransform(1,0,0,1,0,0);cx.fillStyle='white';cx.fillRect(0,0,canvas.width,canvas.height);cx.restore();used=false};
+ canvas.getDrawing=()=>used?canvas.toDataURL('image/png'):null;
+ if(always)initialize();
+}
+makeTruthFalse('B2(b)', ['Pernyataan (i) dalam kertas soalan','Pernyataan (ii) dalam kertas soalan']);
+
 function answerFromCard(card){
+ const radios=[...card.querySelectorAll('input[type=radio]')];if(radios.length){const names=[...new Set(radios.map(r=>r.name))];return names.map((n,i)=>(i+1)+'. '+(radios.find(r=>r.name===n&&r.checked)?.value||'(Tidak dijawab)')).join('\n')}
  const textarea=card.querySelector('textarea');if(textarea)return textarea.value.trim()||'(Tidak dijawab)';
  const selects=[...card.querySelectorAll('select')];if(selects.length)return selects.map((x,i)=>(i+1)+'. '+(x.closest('.match-row')?.querySelector('label')?.textContent||'')+' : '+(x.value||'(Tidak dijawab)')).join('\n');
  const checks=[...card.querySelectorAll('input[type=checkbox]')];if(checks.length)return checks.map((x,i)=>(i+1)+'. '+x.value+' : '+(x.checked?'Tanda (/)':'Tidak ditanda')).join('\n');
@@ -186,6 +213,8 @@ replaceWithMatching('B1(b)',[
  ['luar','Mengekalkan spesies di habitat luar habitat asal / Maintaining species outside their natural habitat']
 ],['Pemuliharaan ex-situ / Ex-situ conservation','Endemik / Endemic','Pemuliharaan in-situ / In-situ conservation']);
 
+['B3(a)','B4(a)','B5(a)','B5(b)','C1c','C4a','C5d','C6e'].forEach(id=>addDrawing(id,false));
+addDrawing('B5(b)',false);
 function downloadAnswerPDF(nama,kelas){
  const {jsPDF}=window.jspdf;
  const doc=new jsPDF({unit:'mm',format:'a4'});
@@ -205,7 +234,10 @@ function downloadAnswerPDF(nama,kelas){
   check(18);write(title,12,true);y+=3;
   for(const q of container.querySelectorAll('.q')){
    const label=q.querySelector('label').textContent.trim();
-   check(13);write(label,10,true);write(answerFromCard(q),10,false,3);y+=4;
+   check(13);write(label,10,true);write(answerFromCard(q),10,false,3);
+   const image=q.querySelector('canvas.draw-pad')?.getDrawing?.();
+   if(image){check(74);doc.addImage(image,'PNG',left+3,y,Math.min(usable-6,125),65);y+=69}
+   y+=4;
   }
   y+=4;
  }
@@ -234,13 +266,13 @@ document.getElementById('save').addEventListener('click',()=>{
      const label=q.querySelector('label');
      wrapper.append(el('div','print-label',label?label.textContent.trim():'Soalan'));
      const answer=el('div','print-answer'+(answerFromCard(q)==='(Tidak dijawab)'?' print-empty':''),answerFromCard(q));
-     wrapper.append(answer);sheet.append(wrapper);
+     wrapper.append(answer);const drawing=q.querySelector('canvas.draw-pad')?.getDrawing?.();if(drawing){const pic=document.createElement('img');pic.src=drawing;pic.style.cssText='width:100%;max-width:500px;display:block';wrapper.append(pic)}sheet.append(wrapper);
    }
  }
  sheet.append(el('div','print-footer','Kertas soalan asal beserta rajah/gambar: teacherziela.github.io/uasa-sains-t2/ • PDF UASA_SAINS_T2_2026.pdf'));
  document.getElementById('status').textContent='Pilih “Save as PDF / Simpan sebagai PDF” pada dialog cetakan. Pada iPhone, gunakan Share → Print, kemudian buka pratonton dan Share → Save to Files.';
  window.print();
 });
-document.getElementById('clear').addEventListener('click',()=>{if(confirm('Kosongkan semua jawapan yang telah diisi?')){document.getElementById('worksheet').reset();document.querySelectorAll('#worksheet input[type=checkbox]').forEach(x=>x.checked=false);document.getElementById('status').textContent='Semua jawapan telah dikosongkan.'}});
+document.getElementById('clear').addEventListener('click',()=>{if(confirm('Kosongkan semua jawapan yang telah diisi?')){document.getElementById('worksheet').reset();document.querySelectorAll('#worksheet input[type=checkbox],#worksheet input[type=radio]').forEach(x=>x.checked=false);document.getElementById('status').textContent='Semua jawapan telah dikosongkan.'}});
 </script>
 </body></html>
