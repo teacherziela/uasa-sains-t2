@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#174a7e">
+<title>UASA Sains Tingkatan 2 — 2026</title>
+<style>
+:root{--blue:#174a7e;--pale:#eef5fb;--line:#cbd5e1}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#172033;background:#f4f7fb;line-height:1.45}
+header{background:var(--blue);color:white;padding:20px max(16px,calc((100% - 1100px)/2))}
+header h1{font-size:clamp(1.25rem,3vw,2rem);margin:0 0 5px}header p{margin:0}
+main{max-width:1100px;margin:18px auto;padding:0 14px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:16px;box-shadow:0 2px 8px #1720330b}
+h2{font-size:1.15rem;margin:0 0 12px;color:var(--blue)}
+.identity{display:grid;grid-template-columns:2fr 1fr;gap:12px}
+label{display:block;font-weight:700;font-size:.95rem;margin-bottom:5px}
+input[type=text],select,textarea{width:100%;border:1px solid #aab8c8;border-radius:8px;padding:11px;font:inherit;background:white;color:#172033}
+textarea{min-height:76px;resize:vertical}
+.qgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.q{border:1px solid var(--line);border-radius:9px;padding:12px;break-inside:avoid}
+.q label{margin-bottom:8px}.hint{font-size:.88rem;color:#526173;margin:0 0 12px}
+button,.btn{display:inline-block;border:0;border-radius:8px;background:var(--blue);color:#fff;padding:12px 16px;font-weight:700;font-size:1rem;cursor:pointer;text-decoration:none}
+button.secondary,.btn.secondary{background:#e5edf6;color:#123553}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+#status{font-size:.9rem;margin-top:10px}
+iframe{width:100%;height:75vh;border:1px solid var(--line);border-radius:8px;background:#eee}
+.small{font-size:.85rem;color:#526173}
+@media(max-width:520px){.identity{grid-template-columns:1fr}main{padding:0 9px}.panel{padding:12px}iframe{height:60vh}.actions button{width:100%}}
+@media print{header,.no-print,#paper{display:none!important}body{background:white}.panel{border:0;box-shadow:none;padding:0;margin:0}.qgrid{display:block}.q{border:0;border-bottom:1px solid #ddd;border-radius:0;padding:8px 0}textarea,input,select{border:0!important;border-bottom:1px solid #aaa!important;border-radius:0!important;padding:4px!important}.print-title{display:block!important}}
+.print-title{display:none}
+</style>
+</head>
+<body>
+<header><h1>Ujian Akhir Sesi Akademik — Sains Tingkatan 2</h1><p>Sesi 2026 · 2 jam · 100 markah</p></header>
+<main>
+<section class="panel">
+<h2>Maklumat murid</h2>
+<div class="identity">
+<div><label for="nama">Nama murid</label><input id="nama" type="text" autocomplete="name" placeholder="Tulis nama penuh" required></div>
+<div><label for="kelas">Kelas</label><input id="kelas" type="text" placeholder="Contoh: 2 Progresif" required></div>
+</div>
+<p class="hint">Kertas soalan asal dipaparkan di bawah tanpa mengubah kandungan atau rajah. Isi jawapan pada ruang jawapan dalam worksheet ini. Simpan PDF untuk dihantar kepada guru.</p>
+</section>
+<section class="panel no-print" id="paper">
+<h2>Kertas soalan asal (26 halaman)</h2>
+<iframe src="UASA_SAINS_T2_2026.pdf#toolbar=1&navpanes=0" title="Kertas soalan asal PDF"></iframe>
+<p class="small">Jika paparan PDF tidak muncul pada telefon, tekan butang “Buka kertas soalan” di bawah.</p>
+<a class="btn secondary" href="UASA_SAINS_T2_2026.pdf" target="_blank" rel="noopener">Buka kertas soalan</a>
+</section>
+<form id="worksheet">
+<div class="panel">
+<h2>Bahagian A — Objektif (20 markah)</h2><p class="hint">Pilih satu jawapan bagi setiap soalan 1–20.</p>
+<div class="qgrid" id="mcq"></div>
+</div>
+<div class="panel"><h2>Bahagian B — Struktur (20 markah)</h2><div class="qgrid" id="sectionB"></div></div>
+<div class="panel"><h2>Bahagian C — Respons bertulis (60 markah)</h2><div class="qgrid" id="sectionC"></div></div>
+</form>
+<section class="panel no-print">
+<h2>Simpan jawapan sebagai PDF</h2>
+<p class="hint">PDF yang dijana mengandungi nama, kelas dan semua jawapan yang diisi. Kertas soalan asal kekal berasingan dan boleh dibuka melalui pautan di atas. Untuk menghantar, lampirkan PDF jawapan kepada guru mengikut arahan guru.</p>
+<div class="actions">
+<button type="button" id="save">Simpan / Cetak jawapan sebagai PDF</button>
+<button type="button" class="secondary" id="clear">Kosongkan jawapan</button>
+</div><div id="status" role="status" aria-live="polite"></div>
+</section>
+</main>
+<script>
+const mcq=document.getElementById('mcq'), secB=document.getElementById('sectionB'), secC=document.getElementById('sectionC');
+function addMCQ(n){let d=document.createElement('div');d.className='q';d.innerHTML=`<label for="a${n}">Soalan ${n}</label><select id="a${n}" name="Soalan ${n}"><option value="">Pilih jawapan</option>${['A','B','C','D'].map(x=>`<option>${x}</option>`).join('')}</select>`;mcq.appendChild(d)}
+for(let n=1;n<=20;n++)addMCQ(n);
+function addText(container,id,label,marks,rows=3){let d=document.createElement('div');d.className='q';d.innerHTML=`<label for="${id}">${label} <span class="small">(${marks} markah)</span></label><textarea id="${id}" name="${label}" rows="${rows}" placeholder="Taip jawapan di sini"></textarea>`;container.appendChild(d)}
+const b=[
+['B1(a)','Bahagian B — 1(a): Kepentingan biodiversiti','2'],['B1(b)','Bahagian B — 1(b): Padanan istilah','2'],
+['B2(a)','Bahagian B — 2(a): Kadar pelarutan','2'],['B2(b)','Bahagian B — 2(b): Benar atau palsu','2'],
+['B3(a)','Bahagian B — 3(a): Fungsi peralatan','2'],['B3(b)','Bahagian B — 3(b): Kemagnetan','2'],
+['B4(a)','Bahagian B — 4(a): Bahan penyerap bunyi','2'],['B4(b)','Bahagian B — 4(b): Bunyi dan medium','2'],
+['B5(a)','Bahagian B — 5(a): Planet','2'],['B5(b)','Bahagian B — 5(b): Jenis galaksi','2']];
+b.forEach(x=>addText(secB,x[0],x[1],x[2],2));
+const c=[
+['C1a','1(a) Pemboleh ubah dimanipulasikan','1'],['C1b','1(b) Inferens berdasarkan pemerhatian','2'],['C1c','1(c) Hubungan luas permukaan dengan tekanan','1'],['C1d','1(d) Definisi secara operasi bagi tekanan','1'],['C1e','1(e) Ramalan kedalaman lekuk dan penjelasan','2'],['C1f','1(f) Langkah berjaga-jaga eksperimen','1'],
+['C2a','2(a) Jenis penyakit tuberkulosis dan penularan','2'],['C2b','2(b) Dua penyakit lain daripada jenis yang sama','2'],['C2c','2(c) Dua punca sistem keimunan lemah','2'],['C2d','2(d) Dua cara mengatasi masalah','2'],
+['C3a','3(a) Ciri bahan X dan bahan Y','2'],['C3b','3(b) Kesan kalsium hidroksida pada kertas litmus','2'],['C3c','3(c) Kegunaan asid dalam kehidupan harian','3'],['C3d','3(d) Cara mengurangkan kesakitan sengatan lebah','3'],
+['C4a','4(a) Peranan enzim di P dan Q','2'],['C4b','4(b) Keadaan sukar menyingkirkan tinja','1'],['C4c','4(c) Dua cara mengatasi masalah 4(b)','2'],['C4d','4(d) Pencernaan tidak sempurna dan penyerapan nutrien','3'],['C4e','4(e) Permukaan usus kecil dan vilus','2'],
+['C5a','5(a) Maksud haiwan invertebrata','1'],['C5b','5(b) Cacing tanah dan ular','1'],['C5c','5(c) Ciri sepunya tikus dan gajah','1'],['C5d','5(d) Lengkapkan carta pengelasan haiwan','3'],['C5e','5(e) Paus dan kumpulan ikan','3'],['C5f','5(f) Interaksi ular dengan helang','3'],
+['C6a','6(a) Faktor penyerapan dan pembebasan haba','1'],['C6b','6(b) Warna baju untuk merentas desa dan sebab','3'],['C6c','6(c) Banding beza suhu dua teko','3'],['C6d','6(d) Kelebihan teko berwarna gelap','2'],['C6e','6(e) Pengubahsuaian periuk untuk meningkatkan penyerapan haba','3']];
+c.forEach(x=>addText(secC,x[0],x[1],x[2],3));
+document.getElementById('save').addEventListener('click',()=>{
+ const nama=document.getElementById('nama').value.trim(), kelas=document.getElementById('kelas').value.trim();
+ if(!nama||!kelas){document.getElementById('status').textContent='Sila isi nama murid dan kelas dahulu.';(!nama?document.getElementById('nama'):document.getElementById('kelas')).focus();return}
+ document.title=`Jawapan UASA Sains T2 - ${nama} - ${kelas}`;
+ document.getElementById('status').textContent='Pilih “Save as PDF / Simpan sebagai PDF” pada dialog cetakan. Pada iPhone, gunakan Share → Print, kemudian buka pratonton dan Share → Save to Files.';
+ window.print();
+});
+document.getElementById('clear').addEventListener('click',()=>{if(confirm('Kosongkan semua jawapan yang telah diisi?')){document.getElementById('worksheet').reset();document.getElementById('status').textContent='Semua jawapan telah dikosongkan.'}});
+</script>
+</body></html>
