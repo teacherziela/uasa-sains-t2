@@ -56,7 +56,7 @@ iframe{width:100%;height:75vh;border:1px solid var(--line);border-radius:8px;bac
 .answer-shortcut a{background:#e6f0fd;color:#174a7e;padding:10px 15px;border-radius:7px;text-decoration:none;font-weight:700}
 #sectionB .qgrid,#sectionC .qgrid{grid-template-columns:1fr}
 @media(max-width:520px){#paper{padding:10px}.pdf-controls{gap:6px}.pdf-controls button{padding:9px 11px}textarea{font-size:16px;min-height:100px}.qgrid{grid-template-columns:1fr}}
-</style>
+.tap-options{display:grid;gap:8px}.tap-option{display:flex;gap:10px;align-items:center;padding:12px;border:1px solid #aec4d9;border-radius:9px;cursor:pointer;font-weight:400;background:#fafcff}.tap-option:has(input:checked){border:2px solid #1762a1;background:#e6f2ff}.tap-option input{width:20px;height:20px;flex:none;accent-color:#174a7e}.match-row{display:grid;gap:6px;margin-bottom:12px}.match-row select{font-size:16px}.interactive-hint{color:#174a7e;font-size:.9rem;margin:0 0 12px}html{scroll-behavior:smooth}</style>
 </head>
 <body>
 <header><h1>Ujian Akhir Sesi Akademik — Sains Tingkatan 2</h1><p>Sesi 2026 · 2 jam · 100 markah</p></header>
@@ -153,6 +153,39 @@ const c=[
 ['C5a','5(a) Maksud haiwan invertebrata','1'],['C5b','5(b) Cacing tanah dan ular','1'],['C5c','5(c) Ciri sepunya tikus dan gajah','1'],['C5d','5(d) Lengkapkan carta pengelasan haiwan','3'],['C5e','5(e) Paus dan kumpulan ikan','3'],['C5f','5(f) Interaksi ular dengan helang','3'],
 ['C6a','6(a) Faktor penyerapan dan pembebasan haba','1'],['C6b','6(b) Warna baju untuk merentas desa dan sebab','3'],['C6c','6(c) Banding beza suhu dua teko','3'],['C6d','6(d) Kelebihan teko berwarna gelap','2'],['C6e','6(e) Pengubahsuaian periuk untuk meningkatkan penyerapan haba','3']];
 c.forEach(x=>addText(secC,x[0],x[1],x[2],3));
+
+/* Interactive response types for questions with confirmed original formats. */
+function replaceWithChecks(id, rows){
+ const area=document.getElementById(id);if(!area)return;
+ const card=area.closest('.q'),old=card.querySelector('textarea');old.remove();
+ card.insertAdjacentHTML('beforeend','<p class="interactive-hint">Tekan kotak pada jawapan pilihan Ateh.</p>');
+ const wrap=document.createElement('div');wrap.className='tap-options';
+ rows.forEach(([name,caption])=>{const label=document.createElement('label');label.className='tap-option';const input=document.createElement('input');input.type='checkbox';input.name=id+'_'+name;input.value=caption;label.append(input,document.createTextNode(caption));wrap.append(label)});
+ card.append(wrap);
+}
+function replaceWithMatching(id,rows,terms){
+ const area=document.getElementById(id);if(!area)return;
+ const card=area.closest('.q');area.remove();
+ card.insertAdjacentHTML('beforeend','<p class="interactive-hint">Pilih istilah yang sesuai bagi setiap pernyataan.</p>');
+ rows.forEach(([key,prompt])=>{const row=document.createElement('div');row.className='match-row';const label=document.createElement('label');label.textContent=prompt;const select=document.createElement('select');select.name=id+'_'+key;select.setAttribute('aria-label',prompt);select.append(new Option('— Pilih istilah —',''));terms.forEach(t=>select.append(new Option(t,t)));row.append(label,select);card.append(row)});
+}
+function answerFromCard(card){
+ const textarea=card.querySelector('textarea');if(textarea)return textarea.value.trim()||'(Tidak dijawab)';
+ const selects=[...card.querySelectorAll('select')];if(selects.length)return selects.map((x,i)=>(i+1)+'. '+(x.closest('.match-row')?.querySelector('label')?.textContent||'')+' : '+(x.value||'(Tidak dijawab)')).join('\n');
+ const checks=[...card.querySelectorAll('input[type=checkbox]')];if(checks.length)return checks.map((x,i)=>(i+1)+'. '+x.value+' : '+(x.checked?'Tanda (/)':'Tidak ditanda')).join('\n');
+ return '(Tidak dijawab)';
+}
+replaceWithChecks('B1(a)',[
+ ['i','i. Bahan mentah industri / Raw materials for industries'],
+ ['ii','ii. Pendidikan / Education'],
+ ['iii','iii. Keseimbangan alam / Balance in nature'],
+ ['iv','iv. Perubatan / Medical']
+]);
+replaceWithMatching('B1(b)',[
+ ['asal','Mengekalkan spesies di habitat asal / Maintaining species in their natural habitat'],
+ ['luar','Mengekalkan spesies di habitat luar habitat asal / Maintaining species outside their natural habitat']
+],['Pemuliharaan ex-situ / Ex-situ conservation','Endemik / Endemic','Pemuliharaan in-situ / In-situ conservation']);
+
 function downloadAnswerPDF(nama,kelas){
  const {jsPDF}=window.jspdf;
  const doc=new jsPDF({unit:'mm',format:'a4'});
@@ -171,9 +204,8 @@ function downloadAnswerPDF(nama,kelas){
  for(const [title,container] of groups){
   check(18);write(title,12,true);y+=3;
   for(const q of container.querySelectorAll('.q')){
-   const field=q.querySelector('select,textarea');
    const label=q.querySelector('label').textContent.trim();
-   check(13);write(label,10,true);write(field.value.trim()||'(Tidak dijawab)',10,false,3);y+=4;
+   check(13);write(label,10,true);write(answerFromCard(q),10,false,3);y+=4;
   }
   y+=4;
  }
@@ -198,11 +230,10 @@ document.getElementById('save').addEventListener('click',()=>{
  for(const [title,container] of sections){
    sheet.append(el('div','print-group',title));
    for(const q of container.querySelectorAll('.q')){
-     const field=q.querySelector('select,textarea');
      const wrapper=el('div','print-question');
      const label=q.querySelector('label');
      wrapper.append(el('div','print-label',label?label.textContent.trim():'Soalan'));
-     const answer=el('div','print-answer'+(field.value.trim()?'':' print-empty'),field.value.trim()||'Tidak dijawab');
+     const answer=el('div','print-answer'+(answerFromCard(q)==='(Tidak dijawab)'?' print-empty':''),answerFromCard(q));
      wrapper.append(answer);sheet.append(wrapper);
    }
  }
@@ -210,6 +241,6 @@ document.getElementById('save').addEventListener('click',()=>{
  document.getElementById('status').textContent='Pilih “Save as PDF / Simpan sebagai PDF” pada dialog cetakan. Pada iPhone, gunakan Share → Print, kemudian buka pratonton dan Share → Save to Files.';
  window.print();
 });
-document.getElementById('clear').addEventListener('click',()=>{if(confirm('Kosongkan semua jawapan yang telah diisi?')){document.getElementById('worksheet').reset();document.getElementById('status').textContent='Semua jawapan telah dikosongkan.'}});
+document.getElementById('clear').addEventListener('click',()=>{if(confirm('Kosongkan semua jawapan yang telah diisi?')){document.getElementById('worksheet').reset();document.querySelectorAll('#worksheet input[type=checkbox]').forEach(x=>x.checked=false);document.getElementById('status').textContent='Semua jawapan telah dikosongkan.'}});
 </script>
 </body></html>
