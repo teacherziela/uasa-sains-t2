@@ -178,7 +178,7 @@ function makeTruthFalse(id,items){
 }
 function addDrawing(id,always=false){
  const field=document.getElementById(id);if(!field)return;const card=field.closest('.q');
- if(always){field.style.display='none'}else{
+ if(always){field.placeholder='Terangkan pengubahsuaian yang dilakarkan di bawah.'}else{
  const toggle=document.createElement('button');toggle.type='button';toggle.className='add-drawing secondary';toggle.textContent='✏️ Tambah lukisan / label rajah';field.insertAdjacentElement('afterend',toggle);
  toggle.onclick=()=>{draw.style.display=draw.style.display==='none'?'block':'none';if(draw.style.display==='block')initialize()}}
  const draw=document.createElement('div');draw.className='draw-wrap';if(!always)draw.style.display='none';
