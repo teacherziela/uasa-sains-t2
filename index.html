@@ -158,7 +158,7 @@ c.forEach(x=>addText(secC,x[0],x[1],x[2],3));
 function replaceWithChecks(id, rows){
  const area=document.getElementById(id);if(!area)return;
  const card=area.closest('.q'),old=card.querySelector('textarea');old.remove();
- card.insertAdjacentHTML('beforeend','<p class="interactive-hint">Tekan kotak pada jawapan pilihan Ateh.</p>');
+ card.insertAdjacentHTML('beforeend','<p class="interactive-hint">Tandakan (✓) pada jawapan yang betul.</p>');
  const wrap=document.createElement('div');wrap.className='tap-options';
  rows.forEach(([name,caption])=>{const label=document.createElement('label');label.className='tap-option';const input=document.createElement('input');input.type='checkbox';input.name=id+'_'+name;input.value=caption;label.append(input,document.createTextNode(caption));wrap.append(label)});
  card.append(wrap);
