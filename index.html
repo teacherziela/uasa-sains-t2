@@ -185,7 +185,8 @@ function downloadAnswerPDF(nama,kelas){
 document.getElementById('save').addEventListener('click',()=>{
  const nama=document.getElementById('nama').value.trim(), kelas=document.getElementById('kelas').value.trim();
  if(!nama||!kelas){document.getElementById('status').textContent='Sila isi nama murid dan kelas dahulu.';(!nama?document.getElementById('nama'):document.getElementById('kelas')).focus();return}
- if(window.jspdf && window.jspdf.jsPDF){downloadAnswerPDF(nama,kelas);document.getElementById('status').textContent='PDF jawapan telah dijana. Semak Files / Downloads pada peranti.';return}\n document.title=`Jawapan UASA Sains T2 - ${nama} - ${kelas}`;
+ if(window.jspdf && window.jspdf.jsPDF){downloadAnswerPDF(nama,kelas);document.getElementById('status').textContent='PDF jawapan telah dijana. Semak Files / Downloads pada peranti.';return}
+ document.title=`Jawapan UASA Sains T2 - ${nama} - ${kelas}`;
  const sheet=document.getElementById('printSheet');
  sheet.replaceChildren();
  const el=(tag,cls,value)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(value!==undefined)n.textContent=value;return n};
