@@ -67,7 +67,7 @@ iframe{width:100%;height:75vh;border:1px solid var(--line);border-radius:8px;bac
 <div><label for="nama">Nama murid</label><input id="nama" type="text" autocomplete="name" placeholder="Tulis nama penuh" required></div>
 <div><label for="kelas">Kelas</label><input id="kelas" type="text" placeholder="Contoh: 2 Progresif" required></div>
 </div>
-<p class="hint">Kertas soalan asal dipaparkan di bawah tanpa mengubah kandungan atau rajah. Isi jawapan pada ruang jawapan dalam worksheet ini. Simpan PDF untuk dihantar kepada guru.</p>
+<p class="hint">Rujuk soalan dan rajah di bawah. Jawab semua soalan menggunakan butang pilihan, tanda (✓), menu padanan atau ruang jawapan yang disediakan. Simpan jawapan sebagai PDF setelah selesai.</p>
 </section>
 <section class="panel no-print" id="paper">
 <h2>Kertas soalan asal (26 halaman)</h2>
@@ -193,10 +193,31 @@ function addDrawing(id,always=false){
  canvas.getDrawing=()=>used?canvas.toDataURL('image/png'):null;
  if(always)initialize();
 }
-makeTruthFalse('B2(b)', ['Pernyataan (i) dalam kertas soalan','Pernyataan (ii) dalam kertas soalan']);
+makeTruthFalse('B2(b)', [
+'i. Larutan pekat tidak boleh melarutkan zat terlarut lagi dan menghasilkan mendakan.',
+'ii. Larutan cair mengandungi kuantiti zat terlarut yang sedikit sahaja di dalam pelarut.',
+'iii. Kadar keterlarutan semakin tinggi apabila semakin tinggi suhu pelarut.'
+]);
 
+
+function replaceWithChoiceRows(id,rows){
+ const el=document.getElementById(id);if(!el)return;const card=el.closest('.q');el.remove();
+ const host=document.createElement('div');host.className='match-row';
+ rows.forEach((r,i)=>{const row=document.createElement('div');row.className='tf-row';const title=document.createElement('strong');title.textContent=r[0];row.append(title);
+ const options=document.createElement('div');options.className='tf-choices';options.style.flexWrap='wrap';
+ r[1].forEach(v=>{const label=document.createElement('label');const radio=document.createElement('input');radio.type='radio';radio.name=id+'-choice-'+i;radio.value=v;label.append(radio,document.createTextNode(v));options.append(label)});row.append(options);host.append(row)});card.append(host);
+}
+function replaceWithSelectRows(id,rows,options){
+ const el=document.getElementById(id);if(!el)return;const card=el.closest('.q');el.remove();
+ rows.forEach((labelText,i)=>{const row=document.createElement('div');row.className='match-row';const lbl=document.createElement('label');lbl.textContent=labelText;const select=document.createElement('select');select.name=id+'-select-'+i;select.append(new Option('— Pilih jawapan —',''));options.forEach(x=>select.append(new Option(x,x)));row.append(lbl,select);card.append(row)});
+}
+function replaceWithInputs(id,rows){
+ const el=document.getElementById(id);if(!el)return;const card=el.closest('.q');el.remove();
+ rows.forEach((line,i)=>{const row=document.createElement('div');row.className='match-row';const label=document.createElement('label');label.textContent=line;const input=document.createElement('input');input.type='text';input.name=id+'-text-'+i;input.placeholder='Isi jawapan';row.append(label,input);card.append(row)});
+}
 function answerFromCard(card){
  const radios=[...card.querySelectorAll('input[type=radio]')];if(radios.length){const names=[...new Set(radios.map(r=>r.name))];return names.map((n,i)=>(i+1)+'. '+(radios.find(r=>r.name===n&&r.checked)?.value||'(Tidak dijawab)')).join('\n')}
+ const inputs=[...card.querySelectorAll('input[type=text]')];if(inputs.length)return inputs.map((x,i)=>(i+1)+'. '+(x.closest('.match-row')?.querySelector('label')?.textContent||'')+' : '+(x.value.trim()||'(Tidak dijawab)')).join('\n');
  const textarea=card.querySelector('textarea');if(textarea)return textarea.value.trim()||'(Tidak dijawab)';
  const selects=[...card.querySelectorAll('select')];if(selects.length)return selects.map((x,i)=>(i+1)+'. '+(x.closest('.match-row')?.querySelector('label')?.textContent||'')+' : '+(x.value||'(Tidak dijawab)')).join('\n');
  const checks=[...card.querySelectorAll('input[type=checkbox]')];if(checks.length)return checks.map((x,i)=>(i+1)+'. '+x.value+' : '+(x.checked?'Tanda (/)':'Tidak ditanda')).join('\n');
@@ -213,8 +234,42 @@ replaceWithMatching('B1(b)',[
  ['luar','Mengekalkan spesies di habitat luar habitat asal / Maintaining species outside their natural habitat']
 ],['Pemuliharaan ex-situ / Ex-situ conservation','Endemik / Endemic','Pemuliharaan in-situ / In-situ conservation']);
 
-['B3(a)','B4(a)','B5(a)','B5(b)','C1c','C4a','C5d','C6e'].forEach(id=>addDrawing(id,false));
-addDrawing('B5(b)',false);
+replaceWithChoiceRows('B2(a)',[
+ ['i. Gula halus larut lebih _____ berbanding gula kiub.',['cepat','lambat']],
+ ['ii. Semakin tinggi kadar kacauan, semakin _____ kadar keterlarutan.',['rendah','tinggi']]
+]);
+replaceWithSelectRows('B3(a)',[
+'i. Elektroskop (rajah sebelah kiri)',
+'ii. Meter berjarum (rajah sebelah kanan)'
+],['Cas elektrik','Arus elektrik','Medan magnet']);
+replaceWithChecks('B3(b)',[
+ ['i','i. Garisan medan magnet tidak boleh bersilang antara satu sama lain.'],
+ ['ii','ii. Daya magnet paling kuat di bahagian tengah magnet.'],
+ ['iii','iii. Kutub magnet yang berlainan akan menarik antara satu sama lain.']
+]);
+replaceWithChecks('B4(a)',[
+ ['P','P — bahan pada gambar P'],
+ ['Q','Q — bahan pada gambar Q'],
+ ['R','R — bahan pada gambar R'],
+ ['S','S — bahan pada gambar S']
+]);
+replaceWithSelectRows('B4(b)',[
+'i. Bunyi tidak dapat merambat melalui _____.',
+'ii. Bunyi memerlukan _____ untuk merambat.'
+],['getaran','medium','vakum']);
+replaceWithChoiceRows('B5(a)',[
+ ['i. Permukaan planet _____ hanya dilitupi gas.',['Musytari','Marikh']],
+ ['ii. Semakin _____ sebuah planet daripada Matahari, semakin banyak masa diperlukan untuk mengelilinginya.',['dekat','jauh']]
+]);
+replaceWithSelectRows('B5(b)',[
+'i. Galaksi pada gambar sebelah kiri (berpilin)',
+'ii. Galaksi pada gambar sebelah kanan (elips)'
+],['Galaksi berpilin','Galaksi elips','Galaksi tidak sekata']);
+replaceWithInputs('C3a',['Ciri bahan X','Ciri bahan Y']);
+replaceWithInputs('C4a',['Peranan enzim di P','Peranan enzim di Q']);
+replaceWithInputs('C5d',['Mamalia','Burung','Reptilia']);
+replaceWithInputs('C6c',['Persamaan','Perbezaan']);
+addDrawing('C6e',true);
 function downloadAnswerPDF(nama,kelas){
  const {jsPDF}=window.jspdf;
  const doc=new jsPDF({unit:'mm',format:'a4'});
